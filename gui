@@ -1,0 +1,309 @@
+import socket
+from tkinter import *
+import time
+import threading
+
+final_length = None
+final_pcs = None
+client_socket = None
+
+
+def clear_window(window):
+    # Destroy all widgets in the window
+    for widget in window.winfo_children():
+        widget.destroy()
+
+
+# Example usage
+window = Tk()
+window.geometry("480x320")
+window.resizable(FALSE, FALSE)
+window.attributes("-fullscreen", True)
+
+def starting_screen():
+    clear_window(window)
+    title_frame = Frame(window)
+    title_frame.pack(side="top", fill="x")
+    title = Label(title_frame, text="Wire Cutter", font=("Arial", 50))
+    title.pack()
+
+    button_frame = Frame(window)
+    button_frame.pack(side="bottom", fill="x")
+    start_button = Button(button_frame, text="Start", font=("Arial", 50), command=length_screen)
+    start_button.pack(fill="x", expand=True)
+
+
+def length_screen():
+    clear_window(window)
+
+    def append_number(number):
+        current_text = entry.get()
+        entry.delete(0, END)
+        entry.insert(0, current_text + number)
+
+    def next_screen():
+        global final_length
+        final_length = (entry.get())
+        if final_length.startswith('0') and len(final_length) > 1:
+            pass
+        elif final_length is None:
+            pass
+        elif float(final_length) / 1 != 0:
+            print(f"{final_length} in")
+            message = f"LEN|{final_length}"
+            client_socket.send(message.encode())
+            number_screen()
+
+    def backspace():
+        current_text = entry.get()
+        entry.delete(0, END)
+        entry.insert(0, current_text[:-1])
+
+    # Create and place the Entry widget
+    entry = Entry(window, font=("Arial", 24), width=20)
+    entry.grid(row=0, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
+
+    # Create and place the label
+    label = Label(window, text="in", font=("Arial", 24))
+    label.grid(row=0, column=3, sticky="ew")
+
+    # Create and place number buttons
+    button1 = Button(window, text="1", font=("Arial", 18), width=6, height=2, command=lambda: append_number("1"))
+    button1.grid(row=1, column=0, padx=5, pady=5)
+
+    button2 = Button(window, text="2", font=("Arial", 18), width=6, height=2, command=lambda: append_number("2"))
+    button2.grid(row=1, column=1, padx=5, pady=5)
+
+    button3 = Button(window, text="3", font=("Arial", 18), width=6, height=2, command=lambda: append_number("3"))
+    button3.grid(row=1, column=2, padx=5, pady=5)
+
+    button4 = Button(window, text="4", font=("Arial", 18), width=6, height=2, command=lambda: append_number("4"))
+    button4.grid(row=1, column=3, padx=5, pady=5)
+
+    button5 = Button(window, text="5", font=("Arial", 18), width=6, height=2, command=lambda: append_number("5"))
+    button5.grid(row=2, column=0, padx=5, pady=5)
+
+    button6 = Button(window, text="6", font=("Arial", 18), width=6, height=2, command=lambda: append_number("6"))
+    button6.grid(row=2, column=1, padx=5, pady=5)
+
+    button7 = Button(window, text="7", font=("Arial", 18), width=6, height=2, command=lambda: append_number("7"))
+    button7.grid(row=2, column=2, padx=5, pady=5)
+
+    button8 = Button(window, text="8", font=("Arial", 18), width=6, height=2, command=lambda: append_number("8"))
+    button8.grid(row=2, column=3, padx=5, pady=5)
+
+    button9 = Button(window, text="9", font=("Arial", 18), width=6, height=2, command=lambda: append_number("9"))
+    button9.grid(row=3, column=0, padx=5, pady=5)
+
+    button0 = Button(window, text="0", font=("Arial", 18), width=6, height=2, command=lambda: append_number("0"))
+    button0.grid(row=3, column=1, padx=5, pady=5)
+
+    buttonDot = Button(window, text=".", font=("Arial", 18), width=6, height=2, command=lambda: append_number("."))
+    buttonDot.grid(row=3, column=2, padx=5, pady=5)
+
+    buttonEnter = Button(window, text="Enter", font=("Arial", 18), width=6, height=2, command=next_screen)
+    buttonEnter.grid(row=4, column=0, columnspan=4, padx=5, pady=5, sticky="ew")
+
+    # Create and place the Backspace button
+    backspace_button = Button(window, text="⌫", command=backspace, font=("Arial", 18), width=6, height=2)
+    backspace_button.grid(row=3, column=3, columnspan=2, padx=5, pady=5, sticky="nsew")
+
+    # Adjust column weights for resizing
+    window.grid_columnconfigure(0, weight=1)
+    window.grid_columnconfigure(1, weight=1)
+    window.grid_columnconfigure(2, weight=1)
+    window.grid_columnconfigure(3, weight=1)
+
+    # Adjust row weights for resizing
+    for row in range(1, 5):
+        window.grid_rowconfigure(row, weight=1)
+
+
+def number_screen():
+    clear_window(window)
+
+    def append_number(number):
+        current_text = entry.get()
+        entry.delete(0, END)
+        entry.insert(0, current_text + number)
+
+    def next_screen():
+        global final_pcs
+        final_pcs = (entry.get())
+        if final_pcs.startswith('0') and len(final_pcs) > 1:
+            pass
+        elif final_pcs is None:
+            pass
+        elif float(final_pcs) / 1 != 0:
+            print(f"{final_pcs} pcs")
+            message = f"PCS|{final_pcs}"
+            client_socket.send(message.encode())
+            confirmation_screen()
+
+    def backspace():
+        current_text = entry.get()
+        entry.delete(0, END)
+        entry.insert(0, current_text[:-1])
+
+    def back():
+        length_screen()
+
+    # Create and place the Entry widget
+    entry = Entry(window, font=("Arial", 24), width=20)
+    entry.grid(row=0, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
+
+    # Create and place the label
+    label = Label(window, text="pcs", font=("Arial", 24))
+    label.grid(row=0, column=3, sticky="ew")
+
+    # Create and place number buttons
+    button1 = Button(window, text="1", font=("Arial", 18), width=6, height=2, command=lambda: append_number("1"))
+    button1.grid(row=1, column=0, padx=5, pady=5)
+
+    button2 = Button(window, text="2", font=("Arial", 18), width=6, height=2, command=lambda: append_number("2"))
+    button2.grid(row=1, column=1, padx=5, pady=5)
+
+    button3 = Button(window, text="3", font=("Arial", 18), width=6, height=2, command=lambda: append_number("3"))
+    button3.grid(row=1, column=2, padx=5, pady=5)
+
+    button4 = Button(window, text="4", font=("Arial", 18), width=6, height=2, command=lambda: append_number("4"))
+    button4.grid(row=1, column=3, padx=5, pady=5)
+
+    button5 = Button(window, text="5", font=("Arial", 18), width=6, height=2, command=lambda: append_number("5"))
+    button5.grid(row=2, column=0, padx=5, pady=5)
+
+    button6 = Button(window, text="6", font=("Arial", 18), width=6, height=2, command=lambda: append_number("6"))
+    button6.grid(row=2, column=1, padx=5, pady=5)
+
+    button7 = Button(window, text="7", font=("Arial", 18), width=6, height=2, command=lambda: append_number("7"))
+    button7.grid(row=2, column=2, padx=5, pady=5)
+
+    button8 = Button(window, text="8", font=("Arial", 18), width=6, height=2, command=lambda: append_number("8"))
+    button8.grid(row=2, column=3, padx=5, pady=5)
+
+    button9 = Button(window, text="9", font=("Arial", 18), width=6, height=2, command=lambda: append_number("9"))
+    button9.grid(row=3, column=0, padx=5, pady=5)
+
+    button0 = Button(window, text="0", font=("Arial", 18), width=6, height=2, command=lambda: append_number("0"))
+    button0.grid(row=3, column=1, padx=5, pady=5)
+
+    buttonEnter = Button(window, text="Enter", font=("Arial", 18), width=6, height=2, command=next_screen)
+    buttonEnter.grid(row=4, column=0, columnspan=4, padx=5, pady=5, sticky="ew")
+
+    # Create and place the Backspace button
+    backspace_button = Button(window, text="⌫", command=backspace, font=("Arial", 18), width=6, height=2)
+    backspace_button.grid(row=3, column=2, padx=5, pady=5)
+
+    back_button = Button(window, text="Back", command=back, font=("Arial", 18), width=6, height=2)
+    back_button.grid(row=3, column=3, padx=5, pady=5)
+
+    # Adjust column weights for resizing
+    window.grid_columnconfigure(0, weight=1)
+    window.grid_columnconfigure(1, weight=1)
+    window.grid_columnconfigure(2, weight=1)
+    window.grid_columnconfigure(3, weight=1)
+
+    # Adjust row weights for resizing
+    for row in range(1, 5):
+        window.grid_rowconfigure(row, weight=1)
+
+
+def confirmation_screen():
+    clear_window(window)
+
+    def next_screen():
+        client_socket.send(bytes("FIN", "utf-8"))
+        clear_screen()
+
+    def back():
+        number_screen()
+
+    label1 = Label(window, text=f"Length: {final_length} in", font=("Arial", 24))
+    label1.pack(pady=20)
+
+    label2 = Label(window, text=f"Number of Wires: {final_pcs} pcs", font=("Arial", 24))
+    label2.pack(pady=20)
+
+    button_frame = Frame(window)
+    button_frame.pack(side="bottom", fill="x", pady=5)
+
+    buttonBack = Button(button_frame, text="Back", font=("Arial", 18), height=4, command=back)
+    buttonBack.pack(side="left", fill="both", expand=True)
+
+    buttonEnter = Button(button_frame, text="Next", font=("Arial", 18), height=4, command=next_screen)
+    buttonEnter.pack(side="left", fill="both", expand=True)
+
+
+def clear_screen():
+    clear_window(window)
+
+    label_frame = Frame(window)
+    label_frame.pack(fill="both", expand=True)
+    running = Label(label_frame, text="Running...", font=("Arial", 50))
+    running.pack(fill="both", expand=True)
+
+
+    window.after(100, running_screen)
+
+def running_screen():
+    #done_flag = client_socket.recv(1024)
+    #decoded_flag = done_flag.decode()
+
+    #if decoded_flag == "DONE":
+    #cutting_complete_screen()
+
+    done_flag = client_socket.recv(1024)
+    decoded_flag = done_flag.decode()
+
+    if decoded_flag == "DONE":
+        cutting_complete_screen()
+
+
+def cutting_complete_screen():
+    clear_window(window)
+
+    def shutdown_button():
+        shutdown_confirmation()
+
+    def continue_button():
+        length_screen()
+
+    label1 = Label(window, text="Cutting Complete", font=("Arial", 24))
+    label1.pack(pady=50)
+
+    button_frame = Frame(window)
+    button_frame.pack(side="bottom", fill="x", pady=5)
+
+    shutdown = Button(button_frame, text="Shutdown", font=("Arial", 18), height=4, command=shutdown_button)
+    shutdown.pack(side="left", fill="both", expand=True)
+
+    cont = Button(button_frame, text="Continue", font=("Arial", 18), height=4, command=continue_button)
+    cont.pack(side="left", fill="both", expand=True)
+
+
+def shutdown_confirmation():
+    clear_window(window)
+
+    def no_button():
+        cutting_complete_screen()
+
+    def shutdown_sequence_temp():
+        window.destroy()
+
+    label1 = Label(window, text="Confirm Shutdown?", font=("Arial", 24))
+    label1.pack(pady=50)
+
+    button_frame = Frame(window)
+    button_frame.pack(side="bottom", fill="x", pady=5)
+
+    noButton = Button(button_frame, text="No", font=("Arial", 18), height=4, command=no_button)
+    noButton.pack(side="left", fill="both", expand=True)
+
+    yes = Button(button_frame, text="Yes", font=("Arial", 18), height=4, command=shutdown_sequence_temp)
+    yes.pack(side="left", fill="both", expand=True)
+
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect(('10.0.5.85', 6000))
+
+starting_screen()
+window.mainloop()
