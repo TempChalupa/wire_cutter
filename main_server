@@ -21,11 +21,12 @@ while True:
     elif decoded_data[0:3] == "PCS":
         quantity = decoded_data[4:]
         print(f"{quantity} pcs")
-    if length is not None and quantity is not None:
-        print(f"length is {length} and quantity is {quantity}")
-        arguments = ["-p", str(length), str(quantity)]
-        subprocess.run(["moteus-venv/bin/python", script] + arguments)
-        print("subprocess done")
-        client_socket.send(bytes("DONE", "utf-8"))
-        length = None
-        quantity = None
+    if decoded_data == "FIN":
+        if length is not None and quantity is not None:
+            print(f"length is {length} and quantity is {quantity}")
+            arguments = ["-p", str(length), str(quantity)]
+            subprocess.run(["moteus-venv/bin/python", script] + arguments)
+            print("subprocess done")
+            client_socket.send(bytes("DONE", "utf-8"))
+            length = None
+            quantity = None
