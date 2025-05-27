@@ -303,7 +303,7 @@ def shutdown_confirmation():
     yes.pack(side="left", fill="both", expand=True)
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('10.0.5.85', 6000))
+client_socket.connect(('10.0.5.85', 6000)) # change to correct ip address
 
 starting_screen()
 window.mainloop()
