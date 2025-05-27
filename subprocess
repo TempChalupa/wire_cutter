@@ -3,7 +3,6 @@ import moteus
 import moteus_pi3hat
 import time
 import math
-import socket
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -11,14 +10,14 @@ parser.add_argument('-p', "--parameters", type=float, nargs=2)
 args = parser.parse_args()
 
 length = args.parameters[0]
-quantity = args.parameters[1]
+quantity = int(args.parameters[1])
 drive_fwd = 2.55906 * math.pi
 desired_pos = length / drive_fwd
 rev = desired_pos
 
 # Define the servo bus map. Replace this with your actual servo IDs and buses.
 servo_bus_map = {
-    1: [11], # Example: Servo with ID 1 is on bus 11
+    1: [11],  # Example: Servo with ID 1 is on bus 11
 }
 
 # Initialize Pi3HatRouter with the bus map
@@ -40,25 +39,41 @@ qr._extra = {
     moteus.Register.TORQUE_ERROR: moteus.F32,
 }
 
-async def main():
-    global length
-    global quantity
 
-    # Clear any Faults
+async def rezero():
+    while True:
+        await c.set_rezero(0.0, query=True)
+        result = None
+        while result is None:
+            result = await c.query()
+        pos = result.values[moteus.Register.POSITION]
+        print(f"Rezoring position: {pos:.4f}")
+        if abs(pos) <= 0.5:
+            break
+    print("Rezoring complete.")
+
+
+async def main():
+    # Clear any faults
     await c.set_stop()
 
+    # Move to desired position and wait for completion
     results = await c.set_position_wait_complete(
         position=desired_pos, accel_limit=8.0, watchdog_timeout=math.nan)
-    await c.set_position(position=math.nan, query=True)
+    # Query position after move
+    result = await c.set_position(position=math.nan, query=True)
 
     # Print the results of the position and velocity query.
     print(results)
 
-if __name__ == '__main__':
-    quantity = int(quantity)
-    for x in range(0, int(quantity) + 1):
+
+if __name__ == "__main__":
+    # Run rezero once before any cycles
+    asyncio.run(rezero())
+
+    for x in range(quantity):
+        print(f"CYCLE NUMBER {x + 1}")
         asyncio.run(main())
-        print(f"CYCLE NUMBER {x}")
         desired_pos += rev
-        print(desired_pos)
+        print(f"the desired pos is {desired_pos}")
         time.sleep(2)
