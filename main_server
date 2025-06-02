@@ -4,29 +4,47 @@ import subprocess
 length = None
 quantity = None
 
-script = "test.py"
-arguments = ["-p", str(length), str(quantity)]
+script = "subpro"
+HOST = "0.0.0.0"  # Listen on all interfaces
+PORT = 6000
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(("10.0.1.139", 6000)) #change to correct ip address
+# Set up server socket
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((HOST, PORT))
+server_socket.listen(1)  # Allow 1 connection at a time
+print(f"Server listening on {HOST}:{PORT}")
+
+client_socket, addr = server_socket.accept()
+print(f"Connection from {addr}")
 
 while True:
-    data = client_socket.recv(1024)
-    decoded_data = data.decode()
+    try:
+        data = client_socket.recv(1024)
+        if not data:
+            print("Client disconnected.")
+            break
 
-    if decoded_data[0:3] == "LEN":
-        length = decoded_data[4:]
-        length = float(length)
-        print(f"{length} in")
-    elif decoded_data[0:3] == "PCS":
-        quantity = decoded_data[4:]
-        print(f"{quantity} pcs")
-    if decoded_data == "FIN":
-        if length is not None and quantity is not None:
-            print(f"length is {length} and quantity is {quantity}")
-            arguments = ["-p", str(length), str(quantity)]
-            subprocess.run(["moteus-venv/bin/python", script] + arguments)
-            print("subprocess done")
-            client_socket.send(bytes("DONE", "utf-8"))
-            length = None
-            quantity = None
+        decoded_data = data.decode()
+
+        if decoded_data.startswith("LEN"):
+            length = float(decoded_data[4:])
+            print(f"{length} in")
+        elif decoded_data.startswith("PCS"):
+            quantity = decoded_data[4:]
+            print(f"{quantity} pcs")
+        elif decoded_data == "FIN":
+            if length is not None and quantity is not None:
+                print(f"length is {length} and quantity is {quantity}")
+                arguments = ["-p", str(length), str(quantity)]
+                subprocess.run(["moteus-venv/bin/python", script] + arguments)
+                print("subprocess done")
+                client_socket.sendall(b"DONE")
+                length = None
+                quantity = None
+    except socket.error as e:
+        print(f"Socket error: {e}")
+        break
+
+# Clean up
+client_socket.close()
+server_socket.close()
